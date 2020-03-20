@@ -2,8 +2,6 @@ import os
 import bpy
 import bpy.utils.previews
 
-from .nodes import utils, weaving
-
 bl_info = {
     'name': "Fabric-o-matic",
     'description': "Library of nodes to generate various woven fabric patterns",
@@ -28,12 +26,7 @@ class AddNodeMenu(MenuBase, bpy.types.Menu):
     bl_label = "Weaving components"
 
     def draw(self, _context):
-        self.draw_node_item(weaving.FMWeaveScaling)
-        self.draw_node_item(weaving.FMWeaveStrobing)
-        self.draw_node_item(weaving.FMWeavingPlain)
-        self.draw_node_item(weaving.FMWeavingTwill)
-        self.draw_node_item(weaving.FMWeavingJacquard)
-        self.draw_node_item(weaving.FMWeaveOverlaying)
+        pass
 
 
 class AddUtilMenu(MenuBase, bpy.types.Menu):
@@ -41,17 +34,7 @@ class AddUtilMenu(MenuBase, bpy.types.Menu):
     bl_label = "Utils"
 
     def draw(self, _context):
-        self.draw_node_item(utils.FMzigzag)
-        self.draw_node_item(utils.FMcosine)
-        self.draw_node_item(utils.FMcircle)
-        self.draw_node_item(utils.FMstripes)
-        self.draw_node_item(utils.FMmixfloats)
-        self.draw_node_item(utils.FMmixvalues)
-        self.draw_node_item(utils.FMfmodulo)
-        self.draw_node_item(weaving.FMWeaveBulging)
-        self.draw_node_item(weaving.FMWeaveMasking)
-        self.draw_node_item(weaving.FMWeavePatternSampling)
-        self.draw_node_item(weaving.FMWeavePatternInterpolating)
+        pass
 
 
 class AddMenu(MenuBase, bpy.types.Menu):
@@ -71,23 +54,6 @@ def extend_add_menu(self, context):
 
 
 classes = (
-    utils.FMmixvalues,
-    utils.FMmixfloats,
-    utils.FMfmodulo,
-    utils.FMzigzag,
-    utils.FMcosine,
-    utils.FMcircle,
-    utils.FMstripes,
-    weaving.FMWeaveScaling,
-    weaving.FMWeaveStrobing,
-    weaving.FMWeaveBulging,
-    weaving.FMWeavePatternSampling,
-    weaving.FMWeavePatternInterpolating,
-    weaving.FMWeavingPlain,
-    weaving.FMWeavingTwill,
-    weaving.FMWeavingJacquard,
-    weaving.FMWeaveOverlaying,
-    weaving.FMWeaveMasking,
     AddNodeMenu,
     AddUtilMenu,
     AddMenu,
