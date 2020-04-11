@@ -1,45 +1,78 @@
+from itertools import chain
+import numpy as np
 import sympy as sp
+from myutils import *
 
-from myutils import vec, vector
+t, u = sp.symbols("t, u")
 
-u, v = sp.symbols("u, v")
+Circle = lambda t, r: vector(r * sp.cos(t * 2 * sp.pi), r * sp.sin(t * 2 * sp.pi), 0)
+Ellipse = lambda t, a, b: vector(a * sp.cos(t * 2 * sp.pi), b * sp.sin(t * 2 * sp.pi), 0)
+Bezier2 = lambda t, p0, p1, p2: (1-t)**2 * p0 + 2 * t * (1-t) * p1 + t**2 * p2
+Bezier3 = lambda t, p0, p1, p2, p3: (1-t)**3 * p0 + 3 * t * (1-t)**2 * p1 + 3 * t**2 * (1-t) * p2 + t**3 * p3
+
+
+def eval_curve(Q, u, usegs=6):
+    uu = np.linspace(0, 1, usegs)
+    points = eval(Q, {u: uu}, dtype=np.float32)
+    return points
+
 
 B2 = [
-    u**2 / 2,  # * P[j-2]
-    - (u+1)**2 + 3*(u+1) - 3/2, # * P[j-1]
-    (u+2)**2 / 2 - 3*(u+2) + 9/2 # * P[j]
+    t**2 / 2,
+    -t**2 + 3*t - sp.Rational(3,2),
+    t**2 / 2 - 3*t + sp.Rational(9,2)
 ]
 
 B3 = [
-    u**3 / 6,  # * P[j-3]
-    -(u+1)**3 / 2 + 2*(u+1)**2 - 2*(u+1) + sp.Rational(2,3),  # * P[j-2]
-    (u+2)**3 / 2 - 4*(u+2)**2 + 10*(u+2) - sp.Rational(22,3),  # * P[j-1]
-    -(u+3)**3 / 6 + 2*(u+3)**2 - 8*(u+3) + sp.Rational(32,3)  # * P[j]
+     t**3 / 6, 
+    -t**3 / 2 + 2*t**2 -  2*t + sp.Rational(2,3),
+     t**3 / 2 - 4*t**2 + 10*t - sp.Rational(22,3),
+    -t**3 / 6 + 2*t**2 -  8*t + sp.Rational(32,3)
 ]
 
-def Spline(bspl, points):
-    deg = len(bspl)
+def Spline(u, B, points):
+    """Creates expression for single spline segment, with arg replacement
+    
+    B: list of basis functions B2 or B3
+    points: list of points from j-k to j
+    """
+    deg = len(B)
     assert len(points) == deg, f"{len(points)} != {deg}"
+    parts = [B[i].subs({t: u+i}) * vector(*points[-i-1]) for i in range(0, deg)]
+    return sp.add.Add(*parts)
 
-    return sp.add.Add(*[bspl[i] * points[i] for i in range(0, deg)])
+def eval_splines(B, points, usegs=6):
+    deg = len(B)
+    return list(chain(*[eval_curve(Spline(t, B, points[ids]), t, usegs) for ids in iter_slices(deg, len(points))]))
 
-Circle = lambda t, r: vector(r * sp.cos(t * 2 * sp.pi), r * sp.sin(t * 2 * sp.pi), 0)
-
-Ellipse = lambda t, a, b: vector(a * sp.cos(t * 2 * sp.pi), b * sp.sin(t * 2 * sp.pi), 0)
-
-# Verically-aligned spine frame: X axis parallel to world XY, Y axis approximately "up"
-def spine_frame(Aa, u):
-    Z = vec.normalize(sp.diff(Aa, u))         # spine tangent direction
+def spine_frame(u, Q):
+    # Verically-aligned spine frame: X axis parallel to world XY, Y axis approximately "up"
+    Z = vec.normalize(sp.diff(Q, u))         # spine tangent direction
     X = vec.normalize(Z.cross(vector(0, 0, 1)))
     Y = X.cross(Z)
     return X, Y, Z
 
-def Pipe(Qa, Qc):
-    X, Y, Z = spine_frame(Qa, u)
+def Pipe(uv, Qa, Qc, XYZ=None):
+    u, v = uv
+    if XYZ is None:
+        X, Y, Z = spine_frame(u, Qa)
+    else:
+        X, Y, Z = XYZ
     return Qa + X * Qc[0] + Y * Qc[1]
 
-def pipe_frame(S, u, v):
+def pipe_frame(uv, S):
+    u, v = uv    
     U = vec.normalize(sp.diff(S, u))
     V = vec.normalize(sp.diff(S, v))
     N = U.cross(V)    
     return U, V, N
+      
+def eval_pipe(S, vrs, usegs=6, vsegs=6):
+    u, v = vrs
+    nu = usegs+1
+    nv = vsegs
+    uu = np.linspace(0, 1, nu)
+    vv = np.linspace(0, 1, nv)
+    points = eval(S, {u: uu, v: vv}, dtype=np.float32).reshape(nu*nv, 3)
+    tris = np.array(tuple(triangulate_pipe(nu, nv)), np.uint32)
+    return points, tris, np.array(np.meshgrid(uu, vv)).T.reshape(-1,2)
