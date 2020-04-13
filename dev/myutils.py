@@ -14,6 +14,7 @@ class vec:
     subs = lambda expr, subs: expr.subs(dict(chain(*[((f'{sym}_x', val[0]),(f'{sym}_y', val[1]),(f'{sym}_z', val[2])) for sym, val in subs.items()])))
     length = lambda v: sp.sqrt(v.dot(v))
     normalize = lambda v: v / vec.length(v)
+    copy = lambda v: vector(v[0], v[1], v[2])
 
 
 def eval(expr, args=None, dtype=np.float, **kwargs):
@@ -99,3 +100,17 @@ def hexcolor(c):
 
 def hexpalette(cmap): 
     return [hexcolor(cmap(t)) for t in np.linspace(0, 1, cmap.N)]
+
+
+def make_grid(xrange=(-1, 1, 1), yrange=(-1, 1, 1)):
+    xmin, xmax, xstep = xrange
+    ymin, ymax, ystep = yrange
+    xx = np.arange(xmin, xmax+xstep, xstep)
+    zz = np.full(xx.shape, 0)
+    xorigins = np.array([xx, np.full(xx.shape, ymin), zz]).T
+    xvectors = np.array([zz, np.full(xx.shape, ymax-ymin), zz]).T
+    yy = np.arange(ymin, ymax+ystep, ystep)
+    zz = np.full(yy.shape, 0)    
+    yorigins = np.array([np.full(yy.shape, xmin), yy, zz]).T
+    yvectors = np.array([np.full(yy.shape, xmax-xmin), zz, zz]).T
+    return np.concatenate((xorigins, yorigins)), np.concatenate((xvectors, yvectors))

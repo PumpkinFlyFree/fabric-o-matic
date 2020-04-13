@@ -11,8 +11,8 @@ Bezier2 = lambda t, p0, p1, p2: (1-t)**2 * p0 + 2 * t * (1-t) * p1 + t**2 * p2
 Bezier3 = lambda t, p0, p1, p2, p3: (1-t)**3 * p0 + 3 * t * (1-t)**2 * p1 + 3 * t**2 * (1-t) * p2 + t**3 * p3
 
 
-def eval_curve(Q, u, usegs=6):
-    uu = np.linspace(0, 1, usegs)
+def eval_curve(Q, u, urange=(0,1,6)):
+    uu = np.linspace(*urange)
     points = eval(Q, {u: uu}, dtype=np.float32)
     return points
 
@@ -41,9 +41,9 @@ def Spline(u, B, points):
     parts = [B[i].subs({t: u+i}) * vector(*points[-i-1]) for i in range(0, deg)]
     return sp.add.Add(*parts)
 
-def eval_splines(B, points, usegs=6):
+def eval_splines(B, points, urange=(0, 1, 6)):
     deg = len(B)
-    return list(chain(*[eval_curve(Spline(t, B, points[ids]), t, usegs) for ids in iter_slices(deg, len(points))]))
+    return list(chain(*[eval_curve(Spline(t, B, points[ids]), t, urange) for ids in iter_slices(deg, len(points))]))
 
 def spine_frame(u, Q):
     # Verically-aligned spine frame: X axis parallel to world XY, Y axis approximately "up"
