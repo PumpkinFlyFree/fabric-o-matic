@@ -13,7 +13,7 @@ Bezier3 = lambda t, p0, p1, p2, p3: (1-t)**3 * p0 + 3 * t * (1-t)**2 * p1 + 3 * 
 
 def eval_curve(Q, u, urange=(0,1,6)):
     uu = np.linspace(*urange)
-    points = eval(Q, {u: uu}, dtype=np.float32)
+    points = eval(Q, {u: uu}, dtype=np.float)
     return points
 
 
@@ -41,9 +41,14 @@ def Spline(u, B, points):
     parts = [B[i].subs({t: u+i}) * vector(*points[-i-1]) for i in range(0, deg)]
     return sp.add.Add(*parts)
 
-def eval_splines(B, points, urange=(0, 1, 6)):
+def make_splines(t, B, points):
     deg = len(B)
-    return list(chain(*[eval_curve(Spline(t, B, points[ids]), t, urange) for ids in iter_slices(deg, len(points))]))
+    return [Spline(t, B, points[ids]) for ids in iter_slices(deg, len(points))]
+
+def eval_splines(B, points, urange=(0, 1, 6)):
+#     deg = len(B)
+#     return list(chain(*[eval_curve(Spline(t, B, points[ids]), t, urange) for ids in iter_slices(deg, len(points))]))
+     return list(chain(*[eval_curve(spl, t, urange) for spl in make_splines(t, B, points)]))
 
 def spine_frame(u, Q):
     # Verically-aligned spine frame: X axis parallel to world XY, Y axis approximately "up"
@@ -67,12 +72,14 @@ def pipe_frame(uv, S):
     N = U.cross(V)    
     return U, V, N
       
-def eval_pipe(S, vrs, usegs=6, vsegs=6):
+def eval_pipe(S, vrs, segs):
     u, v = vrs
+    usegs, vsegs = segs
     nu = usegs+1
     nv = vsegs
     uu = np.linspace(0, 1, nu)
     vv = np.linspace(0, 1, nv)
-    points = eval(S, {u: uu, v: vv}, dtype=np.float32).reshape(nu*nv, 3)
-    tris = np.array(tuple(triangulate_pipe(nu, nv)), np.uint32)
-    return points, tris, np.array(np.meshgrid(uu, vv)).T.reshape(-1,2)
+    points = eval(S, {u: uu, v: vv}).reshape(nu*nv, 3)
+    tris = np.array(tuple(triangulate_pipe(nu, nv)), np.int)
+    coords = np.array(np.meshgrid(uu, vv)).T.reshape(-1,2)
+    return points, tris, coords

@@ -7,6 +7,7 @@ rt = sp.Rational
 half = rt(1,2)
 
 vector = lambda x, y, z: sp.Matrix([sp.sympify(x), sp.sympify(y), sp.sympify(z)])
+npvector = lambda x, y, z: np.array([[x, y, z]]).T
 
 class vec:
     symbol = lambda name: vector(*sp.symbols(f"{name}_x, {name}_y, {name}_z"))
@@ -16,6 +17,8 @@ class vec:
     normalize = lambda v: v / vec.length(v)
     copy = lambda v: vector(v[0], v[1], v[2])
 
+    def vars(*vecs):
+        return list(filter(lambda v: isinstance(v, sp.Symbol), chain(*vecs)))
 
 def eval(expr, args=None, dtype=np.float, **kwargs):
     """Evaluate sympy expression into numpy array.
